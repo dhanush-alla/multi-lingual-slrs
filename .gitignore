@@ -1,0 +1,18 @@
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Large/local data artifacts
+data/raw/
+data/processed/
+models/
+
+# Local model asset (auto-downloaded by preprocess.py)
+hand_landmarker.task
+
+# OS/editor
+.DS_Store
+Thumbs.db
+.vscode/
