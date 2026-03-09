@@ -2,13 +2,13 @@
 
 Multi-language sign language recognition system using neural networks, MediaPipe landmarks, and GPU optimization.
 
-## 📋 Project Overview
+## Project Overview
 
-This project recognizes sign language across two alphabets:
+This project recognizes sign language across two alphabet sets:
 - **ASL** (American Sign Language)
 - **ISL** (Indian Sign Language)  
 
-## 🏗️ Project Structure
+## Project Structure
 
 ```
 SignLanguageProject_Pro/
@@ -28,7 +28,7 @@ SignLanguageProject_Pro/
 └── README.md
 ```
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Installation
 
@@ -54,29 +54,29 @@ python train.py
 python main.py
 ```
 
-## 📊 Performance
+## Performance
 
 - **Framework**: TensorFlow 2.15+
 - **Input**: Hand landmarks (MediaPipe)
 - **Output**: Sign prediction with confidence scores
 
-## 🔧 Configuration
+## Configuration
 
 Edit the following files to customize:
 - `train.py` - Model architecture and training parameters
 - `preprocess.py` - Dataset paths and preprocessing options
 - `main.py` - Live app settings and confidence thresholds
 
-## 📝 Notes
+## Notes
 
 - Landmarks are extracted using MediaPipe Hand Landmarker
 - Temporal smoothing reduces jitter in sequences
 - Models saved in Keras 2026 format (.keras)
 
-## 📄 License
+## License
 
 Custom Project
 
-## 👤 Author
+## Author
 
-Sign Language Project Team
+Dhanush Alla
