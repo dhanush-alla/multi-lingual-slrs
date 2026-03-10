@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sign Language Translator</title>
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Space Grotesk', 'sans-serif'] }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Glass panels */
+    .glass {
+      background: rgba(255,255,255,0.03);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 16px;
+    }
+
+    /* Video frame glow */
+    .video-glow {
+      box-shadow:
+        0 0 0 1px rgba(34,211,238,0.12),
+        0 0 50px rgba(34,211,238,0.07),
+        0 30px 80px rgba(0,0,0,0.6);
+    }
+
+    /* Live dot pulse */
+    .live-dot {
+      width:8px; height:8px; border-radius:50%; background:#4ade80;
+      animation: pulse-dot 2s ease-in-out infinite;
+    }
+    @keyframes pulse-dot {
+      0%,100% { opacity:1; box-shadow:0 0 0 0 rgba(74,222,128,.5); }
+      50%      { opacity:.5; box-shadow:0 0 0 5px rgba(74,222,128,0); }
+    }
+
+    /* Mode button active state */
+    .btn-mode.active {
+      color: #22d3ee !important;
+      border-color: rgba(34,211,238,0.5) !important;
+      background: rgba(34,211,238,0.07) !important;
+      box-shadow: 0 0 14px rgba(34,211,238,0.2), inset 0 0 14px rgba(34,211,238,0.04);
+    }
+
+    /* Conf bar glow */
+    .conf-glow {
+      box-shadow: 0 0 8px #22d3ee, 0 0 18px rgba(34,211,238,0.45);
+    }
+
+    /* Ambient orbs */
+    body::before {
+      content:'';
+      position:fixed; inset:0; pointer-events:none; z-index:0;
+      background:
+        radial-gradient(ellipse 60% 50% at 20% 20%, rgba(34,211,238,0.04) 0%, transparent 60%),
+        radial-gradient(ellipse 50% 40% at 80% 80%, rgba(99,102,241,0.05) 0%, transparent 60%);
+    }
+    body > * { position:relative; z-index:1; }
+
+    /* Scanline HUD overlay */
+    .scanlines {
+      background: repeating-linear-gradient(
+        0deg, transparent, transparent 2px,
+        rgba(0,0,0,0.04) 2px, rgba(0,0,0,0.04) 4px
+      );
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-gray-950 via-[#080d1a] to-black min-h-screen text-slate-100 font-sans flex flex-col">
+
+<!-- ── Header ──────────────────────────────────────────────────────────── -->
+<header class="flex items-center gap-3 px-8 py-4 border-b border-white/[0.05] bg-white/[0.015] backdrop-blur-sm">
+  <div class="live-dot"></div>
+  <h1 class="text-sm font-semibold tracking-tight">Sign Language Translator</h1>
+  <span class="text-xs text-slate-600 font-mono ml-1">v2.0</span>
+  <span id="headerStatus"
+        class="ml-auto text-xs text-slate-500 px-3 py-1 rounded-full border border-white/[0.08] bg-white/[0.04]">
+    Connecting…
+  </span>
+</header>
+
+<!-- ── Main layout ──────────────────────────────────────────────────────── -->
+<div class="flex-1 grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-5 p-5 max-w-[1400px] w-full mx-auto">
+
+  <!-- ── Left: Camera ────────────────────────────────────────────────── -->
+  <div class="flex flex-col gap-4">
+
+    <!-- Video frame -->
+    <div class="relative rounded-2xl overflow-hidden bg-black aspect-[4/3] video-glow ring-1 ring-white/[0.04]">
+      <video id="videoEl" autoplay playsinline muted
+             class="w-full h-full object-cover block" style="transform:scaleX(-1)"></video>
+      <canvas id="captureCanvas" class="hidden"></canvas>
+
+      <!-- Scanlines overlay -->
+      <div class="absolute inset-0 scanlines pointer-events-none"></div>
+
+      <!-- HUD corner accents -->
+      <div class="absolute top-3 left-3 w-5 h-5 border-t-[2px] border-l-[2px] border-cyan-400/50 pointer-events-none"></div>
+      <div class="absolute top-3 right-3 w-5 h-5 border-t-[2px] border-r-[2px] border-cyan-400/50 pointer-events-none"></div>
+      <div class="absolute bottom-[52px] left-3 w-5 h-5 border-b-[2px] border-l-[2px] border-cyan-400/50 pointer-events-none"></div>
+      <div class="absolute bottom-[52px] right-3 w-5 h-5 border-b-[2px] border-r-[2px] border-cyan-400/50 pointer-events-none"></div>
+
+      <!-- Bottom badge strip -->
+      <div class="absolute bottom-0 left-0 right-0 px-4 py-3 flex items-center justify-between
+                  bg-gradient-to-t from-black/80 via-black/40 to-transparent">
+        <div id="modeBadge"
+             class="text-cyan-400 text-xs font-bold tracking-[0.18em] uppercase
+                    px-3 py-1 rounded-full bg-black/60 backdrop-blur-md
+                    border border-cyan-400/30">
+          ASL
+        </div>
+        <button onclick="doAction('speak')"
+                class="text-xs font-semibold text-violet-300 px-3 py-1 rounded-full
+                       bg-black/60 backdrop-blur-md border border-violet-400/30
+                       hover:border-violet-400/60 hover:text-violet-200
+                       transition-all duration-200 cursor-pointer"
+                style="box-shadow:0 0 10px rgba(139,92,246,0.15)">
+          🔊 Speak
+        </button>
+        <div id="confOverlay"
+             class="text-xs text-slate-400 px-3 py-1 rounded-full
+                    bg-black/60 backdrop-blur-md border border-white/10">
+          Conf —
+        </div>
+      </div>
+    </div>
+
+    <!-- Mode switcher -->
+    <div class="flex gap-2">
+      <button id="btnASL" onclick="setMode('asl')"
+              class="btn-mode active flex-1 py-2.5 rounded-xl border border-white/10 bg-white/[0.04]
+                     text-sm font-bold tracking-widest uppercase text-slate-400
+                     transition-all duration-200 hover:border-cyan-400/40 hover:text-cyan-300 cursor-pointer">
+        ASL
+      </button>
+      <button id="btnISL" onclick="setMode('isl')"
+              class="btn-mode flex-1 py-2.5 rounded-xl border border-white/10 bg-white/[0.04]
+                     text-sm font-bold tracking-widest uppercase text-slate-400
+                     transition-all duration-200 hover:border-cyan-400/40 hover:text-cyan-300 cursor-pointer">
+        ISL
+      </button>
+      <button id="btnRSL" onclick="setMode('rsl')"
+              class="btn-mode flex-1 py-2.5 rounded-xl border border-white/10 bg-white/[0.04]
+                     text-sm font-bold tracking-widest uppercase text-slate-400
+                     transition-all duration-200 hover:border-cyan-400/40 hover:text-cyan-300 cursor-pointer">
+        RSL
+      </button>
+    </div>
+
+    <!-- Action buttons -->
+    <div class="flex gap-2">
+      <button onclick="doAction('space')"
+              class="flex-1 py-2.5 rounded-xl border border-white/10 bg-white/[0.03] text-slate-400
+                     text-sm font-medium hover:border-white/25 hover:text-white
+                     transition-all duration-200 cursor-pointer">
+        ␣&nbsp; Space
+      </button>
+      <button onclick="doAction('backspace')"
+              class="flex-1 py-2.5 rounded-xl border border-amber-500/20 bg-amber-500/[0.04] text-amber-400
+                     text-sm font-medium hover:border-amber-400/50 hover:bg-amber-500/10
+                     transition-all duration-200 cursor-pointer">
+        ⌫&nbsp; Backspace
+      </button>
+      <button onclick="doAction('clear')"
+              class="flex-1 py-2.5 rounded-xl border border-red-500/20 bg-red-500/[0.04] text-red-400
+                     text-sm font-medium hover:border-red-400/50 hover:bg-red-500/10
+                     transition-all duration-200 cursor-pointer">
+        ✕&nbsp; Clear
+      </button>
+    </div>
+
+
+  </div>
+
+  <!-- ── Right: Info panel ────────────────────────────────────────────── -->
+  <div class="flex flex-col gap-4">
+
+    <!-- Current Sign -->
+    <div class="glass p-5">
+      <p class="text-[10px] font-bold tracking-widest uppercase text-slate-500 mb-3">Current Sign</p>
+      <div id="predChar"
+           class="text-[6.5rem] font-bold leading-none text-center text-cyan-400
+                  min-h-[100px] flex items-center justify-center select-none"
+           style="text-shadow:0 0 30px rgba(34,211,238,0.55), 0 0 60px rgba(34,211,238,0.2)">
+        —
+      </div>
+      <!-- Glowing confidence line -->
+      <div class="mt-4 h-[2px] rounded-full overflow-hidden bg-white/[0.06]">
+        <div id="confBar"
+             class="h-full rounded-full conf-glow transition-all duration-200 ease-out"
+             style="width:0%; background:linear-gradient(90deg,#0e7490,#22d3ee)">
+        </div>
+      </div>
+    </div>
+
+    <!-- Building Word -->
+    <div class="glass p-5">
+      <p class="text-[10px] font-bold tracking-widest uppercase text-slate-500 mb-2">Building Word</p>
+      <div id="wordDisplay"
+           class="text-2xl font-bold text-white min-h-[2rem] tracking-wide break-all">
+        &nbsp;
+      </div>
+    </div>
+
+    <!-- Sentence -->
+    <div class="glass p-5">
+      <p class="text-[10px] font-bold tracking-widest uppercase text-slate-500 mb-2">Sentence</p>
+      <div id="sentenceDisplay"
+           class="text-lg font-medium text-slate-200 min-h-[1.8rem] leading-snug break-words">
+        &nbsp;
+      </div>
+    </div>
+
+    <!-- Translation -->
+    <div class="glass p-5">
+      <p class="text-[10px] font-bold tracking-widest uppercase text-slate-500 mb-3">Translation</p>
+      <div id="transDisplay"
+           class="text-xl font-semibold text-amber-400 min-h-[3rem] mb-4 leading-snug break-words"
+           style="text-shadow:0 0 16px rgba(251,191,36,0.3)">
+        Press Telugu or Hindi to translate.
+      </div>
+      <div class="flex gap-3">
+        <button onclick="doAction('translate_te')"
+                class="flex-1 py-2.5 rounded-xl border border-emerald-500/20 bg-emerald-500/[0.04]
+                       text-sm font-semibold tracking-wider text-emerald-400
+                       hover:border-emerald-400/50 hover:bg-emerald-500/10
+                       transition-all duration-200 cursor-pointer">
+          Telugu
+        </button>
+        <button onclick="doAction('translate_hi')"
+                class="flex-1 py-2.5 rounded-xl border border-emerald-500/20 bg-emerald-500/[0.04]
+                       text-sm font-semibold tracking-wider text-emerald-400
+                       hover:border-emerald-400/50 hover:bg-emerald-500/10
+                       transition-all duration-200 cursor-pointer">
+          Hindi
+        </button>
+      </div>
+      <!-- Speak button -->
+      <button onclick="doAction('speak')"
+              class="mt-3 w-full py-2.5 rounded-xl border border-violet-500/30 bg-violet-500/[0.06] text-violet-300
+                     text-sm font-semibold tracking-wider
+                     hover:border-violet-400/60 hover:bg-violet-500/10 hover:text-violet-200
+                     transition-all duration-200 cursor-pointer"
+              style="box-shadow:0 0 18px rgba(139,92,246,0.1)">
+        🔊&nbsp; Speak Sentence
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  // ── Socket ───────────────────────────────────────────────────────────────
+  const socket = io();
+
+  socket.on('connect', () => {
+    document.getElementById('headerStatus').textContent = 'Connected';
+  });
+  socket.on('disconnect', () => {
+    document.getElementById('headerStatus').textContent = 'Disconnected';
+  });
+
+  socket.on('result', d => {
+    document.getElementById('predChar').textContent        = d.prediction || '—';
+    document.getElementById('wordDisplay').textContent     = d.word       || '\u00a0';
+    document.getElementById('sentenceDisplay').textContent = d.sentence   || '\u00a0';
+    if (d.confidence !== undefined) {
+      const pct = Math.round(d.confidence * 100);
+      document.getElementById('confBar').style.width       = pct + '%';
+      document.getElementById('confOverlay').textContent   = 'Conf ' + pct + '%';
+    }
+  });
+
+  socket.on('translation', d => {
+    document.getElementById('transDisplay').textContent = d.text || '—';
+  });
+
+  // ── Webcam ───────────────────────────────────────────────────────────────
+  const video  = document.getElementById('videoEl');
+  const canvas = document.getElementById('captureCanvas');
+  const ctx    = canvas.getContext('2d');
+
+  navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: 640, height: 480 }, audio: false })
+    .then(stream => {
+      video.srcObject = stream;
+      document.getElementById('headerStatus').textContent = socket.connected ? 'Connected' : 'Connecting…';
+    })
+    .catch(err => {
+      console.error('Camera error:', err);
+      document.getElementById('headerStatus').textContent = 'No Camera';
+    });
+
+  // ── Frame loop (~10 FPS) ──────────────────────────────────────────────────
+  // The canvas captures a MIRRORED frame so the backend sees the same
+  // orientation as main.py's cv2.flip(frame, 1).
+  let busy = false;
+  setInterval(() => {
+    if (busy || !video.videoWidth) return;
+    busy = true;
+    canvas.width  = 320;
+    canvas.height = 240;
+    ctx.save();
+    ctx.translate(canvas.width, 0);
+    ctx.scale(-1, 1);
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    ctx.restore();
+    socket.emit('process_frame', { frame: canvas.toDataURL('image/jpeg', 0.5) });
+    busy = false;
+  }, 100);
+
+  // ── Mode switching ────────────────────────────────────────────────────────
+  function setMode(mode) {
+    socket.emit('change_mode', { mode });
+    ['asl', 'isl', 'rsl'].forEach(m => {
+      document.getElementById('btn' + m.toUpperCase()).classList.toggle('active', m === mode);
+    });
+    document.getElementById('modeBadge').textContent = mode.toUpperCase();
+    document.getElementById('transDisplay').textContent = 'Press Telugu or Hindi to translate.';
+  }
+
+  // ── Actions ───────────────────────────────────────────────────────────────
+  function doAction(action) {
+    socket.emit('handle_action', { action });
+  }
+</script>
+</body>
+</html>
