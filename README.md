@@ -63,6 +63,9 @@ python main.py
   </figure>
 </div>
 
+<br>
+<br>
+
 <div align="center">
   <figure>
     <img width="1920" height="1080" alt="Web Browser Deployment with Flask and WebSockets" src="https://github.com/user-attachments/assets/8f5ea520-efb5-41e5-ab5e-bda1ffb678da" />
