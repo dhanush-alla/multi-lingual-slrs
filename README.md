@@ -59,7 +59,7 @@ python main.py
 
 
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/925003b7-7647-42f7-8175-07b3f93cfc67" width="800" alt="OpenCV Live HUD Interface performing MLSLRS inference" />
+  <img src="https://github.com/user-attachments/assets/925003b7-7647-42f7-8175-07b3f93cfc67" width="600" alt="OpenCV Live HUD Interface performing MLSLRS inference" />
   <br>
   <em><b>Figure 1:</b> The MLSLRS OpenCV local interface performing real-time inference on sign sequences.</em>
 </p>
