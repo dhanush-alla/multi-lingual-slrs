@@ -54,6 +54,24 @@ python train.py
 python main.py
 ```
 
+### Implementation
+
+<div align="center">
+  <figure>
+    <img width="802" height="640" alt="Universal Translator Live HUD Dashboard" src="https://github.com/user-attachments/assets/f8332e2a-29e3-437f-adc3-d16af9026e54" />
+    <figcaption><b>Figure 1:</b> The MLSLRS Live HUD Dashboard.</figcaption>
+  </figure>
+</div>
+
+<div align="center">
+  <figure>
+    <img width="1920" height="1080" alt="Web Browser Deployment with Flask and WebSockets" src="https://github.com/user-attachments/assets/8f5ea520-efb5-41e5-ab5e-bda1ffb678da" />
+    <figcaption><b>Figure 2:</b> The web-migrated deployment running in the browser. Real-time video frames are streamed via Socket.IO to the Flask backend for ML inference, wrapped in the updated glassmorphic UI.</figcaption>
+  </figure>
+</div>
+
+
+
 ## Performance
 
 - **Framework**: TensorFlow 2.15+
