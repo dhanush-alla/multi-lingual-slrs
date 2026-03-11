@@ -56,23 +56,20 @@ python main.py
 
 ### Implementation
 
-<div align="center">
-  <figure>
-    <img width="802" height="640" alt="Universal Translator Live HUD Dashboard" src="https://github.com/user-attachments/assets/f8332e2a-29e3-437f-adc3-d16af9026e54" />
-    <figcaption><b>Figure 1:</b> The MLSLRS Live HUD Dashboard.</figcaption>
-  </figure>
-</div>
 
-<br>
-<br>
 
-<div align="center">
-  <figure>
-    <img width="1920" height="1080" alt="Web Browser Deployment with Flask and WebSockets" src="https://github.com/user-attachments/assets/8f5ea520-efb5-41e5-ab5e-bda1ffb678da" />
-    <figcaption><b>Figure 2:</b> The web-migrated deployment running in the browser. Real-time video frames are streamed via Socket.IO to the Flask backend for ML inference, wrapped in the updated glassmorphic UI.</figcaption>
-  </figure>
-</div>
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/925003b7-7647-42f7-8175-07b3f93cfc67" width="802" height="640" alt="OpenCV Live HUD Interface performing MLSLRS inference" />
+  <br>
+  <em><b>Figure 1:</b> The MLSLRS OpenCV local interface performing real-time inference on sign sequences.</em>
+</p>
 
+
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/8f5ea520-efb5-41e5-ab5e-bda1ffb678da" width="800" alt="Web Browser Deployment" />
+  <br>
+  <em><b>Figure 2:</b> The web-migrated deployment running in the browser with the glassmorphic UI.</em>
+</p>
 
 
 ## Performance
